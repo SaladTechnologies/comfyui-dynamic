@@ -28,5 +28,6 @@ docker compose up
 ## Environment Variables
 | Variable | Description | Default |
 | -------- | ----------- | ------- |
+| COMFYUI_PORT | The port to run the ComfyUI server on. | 8188 |
 | CIVITAI_MODEL_VERSION_IDS | A comma-separated list of model version IDs to download. ex `128713` for just [Dreamshaper 8](https://civitai.com/models/4384?modelVersionId=128713) or `128713,166808` for Dreamshaper and [Arterior](https://civitai.com/models/112229/arterior-digital-art-style). This supports Checkpoints, VAEs, and Controlnets. The rightmost checkpoint value will be the default checkpoint when the server starts, and the rightmost vae value will be the default vae when the server starts. | None |
 | LOAD_REFINER | If set to `1`, the SDXL refiner model will be downloaded. | 0 |
