@@ -1,0 +1,136 @@
+#! /usr/bin/env bash
+set -e
+
+# This script is executed by the Dockerfile entrypoint. It looks for these environment variables,
+# and if they are set, it will use them to download a model from Civit.ai or Huggingface respectively,
+# and then run the model server.
+# CIVITAI_MODEL_VERSION_ID: abc
+# LOAD_REFINER: 1 | 0
+
+models_dir=/opt/ComfyUI/models
+checkpoints_dir=${models_dir}/checkpoints/
+vae_dir=${models_dir}/vae/
+loras_dir=${models_dir}/loras/
+upscale_dir=${models_dir}/upscale_models/
+controlnet_dir=${models_dir}/controlnet/
+
+mkdir -p $checkpoints_dir
+mkdir -p $vae_dir
+mkdir -p $loras_dir
+mkdir -p $upscale_dir
+mkdir -p $controlnet_dir
+
+backend="original"
+
+function getModelFile() {
+  json=$1
+
+  # json is an object with a key "files" which is an array of objects. We want to select the object where .type = Model
+  files=$(echo $json | jq -r '.files')
+  model_file=$(echo $files | jq -r '.[] | select(.type == "Model")')
+  echo $model_file
+}
+
+function getConfigFile() {
+  json=$1
+
+  # json is an object with a key "files" which is an array of objects. We want to select the object where .type = Config
+  files=$(echo $json | jq -r '.files')
+  config_file=$(echo $files | jq -r '.[] | select(.type == "Config")')
+  echo $config_file
+}
+
+# Download a model from Civit.ai
+# Usage: download_civitai_model <model_version_id>
+function download_civitai_model() {
+  model_version_id=$1
+  echo "Checking Civit.ai model $model_version_id"
+  model_info=$(curl -sSf https://civitai.com/api/v1/model-versions/$model_version_id)
+  if [ $? -ne 0 ]; then
+    echo "Error: Failed to fetch model info."
+    exit 1
+  fi
+
+  base_model=$(echo $model_info | jq -r '.baseModel')
+
+  model_file_obj=$(getModelFile "$model_info")
+  model_filename=$(echo $model_file_obj | jq -r '.name')
+  config_file_obj=$(getConfigFile "$model_info")
+  config_filename=$(echo $config_file_obj | jq -r '.name')
+  download_url=$(echo $model_file_obj | jq -r '.downloadUrl')
+  model_name=$(echo $model_info | jq -r '.model.name')
+  model_type=$(echo $model_info | jq -r '.model.type')
+
+  echo "Downloading $model_name ($model_type) as $model_filename from $download_url"
+  if [ "$model_type" == "Checkpoint" ]; then
+    dest_file=$checkpoints_dir$model_filename
+  elif [ "$model_type" == "Controlnet" ]; then
+    dest_file=$controlnet_dir$model_filename
+  elif [ "$model_type" == "VAE" ]; then
+    dest_file=$vae_dir$model_filename
+  else
+    echo "Error: Unknown model type $model_type"
+    exit 1
+  fi
+
+  # Check if file already exists and is more than 0 bytes
+  if [ -f "$dest_file" ] && [ -s "$dest_file" ]; then
+    echo "File $dest_file already exists and is not empty. Skipping download."
+  else
+    time_output=$(time (wget -q $download_url --content-disposition -O $dest_file 2>&1) 2>&1)
+    real_time=$(echo $time_output | grep real | awk '{print $2}')
+    echo "Downloaded $model_name ($model_type) as $dest_file in $real_time"
+  fi
+
+  if [ -n "$config_file_obj" ]; then
+    config_download_url=$(echo $config_file_obj | jq -r '.downloadUrl')
+    download_location=$(dirname "$dest_file")/$config_filename
+    echo "Downloading config file $config_filename from $config_download_url"
+    time_output=$(time (wget -q $config_download_url --content-disposition -O $download_location 2>&1) 2>&1)
+    real_time=$(echo $time_output | grep real | awk '{print $2}')
+    echo "Downloaded config file $config_filename as $download_location in $real_time"
+  fi
+}
+
+# Download a file from Huggingface
+# Usage: download_hf_file <repo_id> <model_filename>
+function download_hf_file() {
+  repo_id=$1
+  model_filename=$2
+  dest_file=$checkpoints_dir$model_filename
+  download_url="https://huggingface.co/$repo_id/resolve/main/$model_filename"
+  echo "Downloading $model_filename from $download_url"
+  time_output=$(time (wget -q $download_url -O $dest_file 2>&1) 2>&1)
+  real_time=$(echo $time_output | grep real | awk '{print $2}')
+  echo "Downloaded $model_filename as $dest_file in $real_time"
+}
+
+if [ -n "$CIVITAI_MODEL_VERSION_IDS" ]; then
+  IFS=',' read -ra VERSION_IDS <<<"$CIVITAI_MODEL_VERSION_IDS"
+  for version_id in "${VERSION_IDS[@]}"; do
+    download_civitai_model $version_id
+  done
+fi
+
+if [ -n "$LOAD_REFINER" ]; then
+  if [ "$LOAD_REFINER" == "1" ]; then
+    refiner_repo="stabilityai/stable-diffusion-xl-refiner-1.0"
+    refiner_version="sd_xl_refiner_1.0.safetensors"
+    download_hf_file $refiner_repo $refiner_version
+  fi
+fi
+
+# if [ -n "$EXTENSIONS" ]; then
+#   IFS=',' read -ra EXTENSIONS <<<"$EXTENSIONS"
+#   for extension in "${EXTENSIONS[@]}"; do
+#     # these are in the format of name|repo_url
+#     IFS='|' read -ra EXTENSION <<<"$extension"
+#     extension_name=${EXTENSION[0]}
+#     extension_repo=${EXTENSION[1]}
+#     git clone $extension_repo $extension_path$extension_name
+#     echo "Installed extension $extension_name from $extension_repo"
+#   done
+# fi
+
+#
+init.sh

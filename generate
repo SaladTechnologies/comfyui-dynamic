@@ -1,0 +1,40 @@
+#! /usr/bin/env bash
+
+workflow_file=$1
+
+if [ -z "$workflow_file" ]; then
+  echo "Usage: $0 <workflow_file>"
+  exit 1
+fi
+
+resp=$(curl -X POST \
+  'http://localhost:8188/prompt' \
+  --header 'Content-Type: application/json' \
+  -d @${workflow_file})
+
+prompt_id=$(echo $resp | jq -r '.prompt_id')
+
+# Check the history for outputs until outputs has a key. If it doesn't, sleep for .2 second and try again.
+while :; do
+  prompt_history=$(curl -X GET "http://localhost:8188/history/$prompt_id")
+  outputs=$(echo "$prompt_history" | jq --arg pid "${prompt_id}" -r '.[$pid].outputs')
+
+  # Check if outputs has keys
+  num_keys=$(echo "$outputs" | jq 'length')
+
+  if ((num_keys >= 1)); then
+    break
+  fi
+  # Wait for .2 seconds before polling again. Adjust as needed.
+  sleep .2
+done
+
+# Iterate through keys in outputs, and for each key, .images[0].filename
+image_files=$(echo $outputs | jq -r 'keys[] as $k | .[$k].images[0].filename')
+
+# Iterate through image_files and download each one
+for image_file in $image_files; do
+  curl -X GET \
+    "http://localhost:8188/view?filename=$image_file" \
+    -o "$image_file"
+done

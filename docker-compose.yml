@@ -1,0 +1,25 @@
+version: '3'
+services:
+  comfyui:
+    image: saladtechnologies/comfyui:dynamic
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+              count: all
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./models:/opt/ComfyUI/models
+    environment:
+      # A comma separated list of model version ids to load
+      CIVITAI_MODEL_VERSION_IDS: 122143,128713
+      WEB_ENABLE_AUTH: false
+
+      # Set to 1 to enable the refiner
+      LOAD_REFINER: 0
