@@ -1,5 +1,5 @@
 # comfyui-dynamic
-A ComfyUI container wrapped in an entrypoint script that allows preloading of models via environment variables
+A ComfyUI container wrapped in an entrypoint script that allows preloading of models via environment variables. We are using https://github.com/ai-dock/comfyui/ as the base image.
 
 ## API
 
