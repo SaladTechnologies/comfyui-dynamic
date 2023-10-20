@@ -1,6 +1,11 @@
 # comfyui-dynamic
 A ComfyUI container wrapped in an entrypoint script that allows preloading of models via environment variables. We are using https://github.com/ai-dock/comfyui/ as the base image.
 
+You can use the prebuilt docker image at
+```
+saladtechnologies/comfyui:dynamic
+```
+
 ## API
 
 The comfy api is strange and largely undocumented. This [article](https://medium.com/@yushantripleseven/comfyui-using-the-api-261293aa055a) gives a good example of how to use it. [Here](./workflow_api.json) is an example text2img payload. Check out the [generate](./generate) script for an example of how to use Comfy progrematically.
