@@ -25,6 +25,18 @@ docker buildx build \
 .
 ```
 
+## Build Image With Models Baked In
+
+```bash
+docker buildx build \
+-f Dockerfile.baked \
+--platform linux/amd64 \
+--output type=docker \
+--provenance false \
+-t saladtechnologies/comfyui:baked \
+.
+```
+
 ## Run
 
 ```bash

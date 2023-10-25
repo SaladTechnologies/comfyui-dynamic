@@ -1,0 +1,5 @@
+FROM saladtechnologies/comfyui:dynamic
+
+ENV CIVITAI_MODEL_VERSION_IDS="122143,128713"
+
+RUN LOAD_ONLY=1 ./load-models-and-start

@@ -7,6 +7,8 @@ set -e
 # CIVITAI_MODEL_VERSION_ID: abc
 # LOAD_REFINER: 1 | 0
 
+LOAD_ONLY=${LOAD_ONLY:-0}
+
 models_dir=/opt/ComfyUI/models
 checkpoints_dir=${models_dir}/checkpoints/
 vae_dir=${models_dir}/vae/
@@ -133,4 +135,8 @@ fi
 # fi
 
 #
+if [ "$LOAD_ONLY" == "1" ]; then
+  echo "Exiting after loading models"
+  exit 0
+fi
 init.sh
