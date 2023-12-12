@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+
+## Usage: ./build [--push]
+set -euo pipefail
+
+if [[ $# -gt 0 && $1 == "--push" ]]; then
+  push=true
+else
+  push=false
+fi
+
+git_sha=$(git rev-parse --short HEAD)
+
+docker buildx build \
+  -t saladtechnologies/comfyui:dynamic \
+  -f Dockerfile \
+  --platform linux/amd64 \
+  --output type=docker \
+  --provenance false \
+  .
+
+docker tag saladtechnologies/comfyui:dynamic saladtechnologies/comfyui:dynamic-$git_sha
+
+if [ "$push" = true ]; then
+  echo "Pushing saladtechnologies/comfyui:dynamic"
+  docker push saladtechnologies/comfyui:dynamic
+
+  echo "Pushing saladtechnologies/comfyui:dynamic-$git_sha"
+  docker push saladtechnologies/comfyui:dynamic-$git_sha
+fi

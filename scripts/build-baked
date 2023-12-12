@@ -1,0 +1,136 @@
+#! /usr/bin/env bash
+
+set -euo pipefail
+usage="
+Usage: ./build-baked [OPTIONS]
+
+Options:
+  --push                          Push the built image to DockerHub. Default: false
+  --civitai-version-ids <v1,v2>   Comma-separated list of CivitAI model version IDs to load. Default: ""
+  --load-refiner                  Load the refiner model. Default: false
+  --load-sdxl-base                Load the SDXL base model. Default: false
+  --controlnet-urls <url1,url2>   Comma-separated list of ControlNet download URLs. Default: ""
+  --extension-urls <url1,url2>    Comma-separated list of extension Git URLs. Default: ""
+  --ckpt-urls <url1,url2>         Comma-separated list of CKPT download URLs. Default: ""
+  --vae-urls <url1,url2>          Comma-separated list of VAE download URLs. Default: ""
+  --lora-urls <url1,url2>         Comma-separated list of LoRa download URLs. Default: ""
+  --tag <tag>                     Tag to use for the image. Defaults to the CivitAI version IDs with a hyphen between them
+  --image <image>                 Image to build. Default: saladtechnologies/comfyui
+  --help                          Show this message and exit
+"
+
+
+# parse args
+push=false
+load_refiner=0
+load_sdxl_base=0
+civitai_model_version_ids=""
+tag=""
+controlnet_urls=""
+extension_urls=""
+ckpt_urls=""
+vae_urls=""
+lora_urls=""
+image="saladtechnologies/comfyui"
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+  --push)
+    push=true
+    shift
+    ;;
+  --load-refiner)
+    load_refiner=1
+    shift
+    ;;
+  --load-sdxl-base)
+    load_sdxl_base=1
+    shift
+    ;;
+  --civitai-version-ids)
+    civitai_model_version_ids="$2"
+    shift
+    shift
+    ;;
+  --controlnet-urls)
+    controlnet_urls="$2"
+    shift
+    shift
+    ;;
+  --extension-urls)
+    extension_urls="$2"
+    shift
+    shift
+    ;;
+  --ckpt-urls)
+    ckpt_urls="$2"
+    shift
+    shift
+    ;;
+  --vae-urls)
+    vae_urls="$2"
+    shift
+    shift
+    ;;
+  --lora-urls)
+    lora_urls="$2"
+    shift
+    shift
+    ;;
+  --tag)
+    tag="$2"
+    shift
+    shift
+    ;;
+  --image)
+    image="$2"
+    shift
+    shift
+    ;;
+  --help)
+    echo "$usage"
+    exit 0
+    ;;
+  *)
+    echo "Unknown option $key"
+    exit 1
+    ;;
+  esac
+done
+
+git_sha=$(git rev-parse --short HEAD)
+
+# the default tag is the version ids with a hypen between them
+if [[ -z $tag ]]; then
+  tag=$(echo $civitai_model_version_ids | tr ',' '-')
+fi
+base_tag="dynamic"
+
+docker buildx build \
+  -t $image:$tag \
+  -f Dockerfile.baked \
+  --platform linux/amd64 \
+  --output type=docker \
+  --provenance false \
+  --build-arg VERSION=$base_tag \
+  --build-arg BASE_IMAGE=$image \
+  --build-arg ENTRYPOINT_FILE="./load-models-and-start" \
+  --build-arg CIVITAI_MODEL_VERSION_IDS=$civitai_model_version_ids \
+  --build-arg LOAD_REFINER=$load_refiner \
+  --build-arg LOAD_SDXL_BASE=$load_sdxl_base \
+  --build-arg CONTROLNET_URLS=$controlnet_urls \
+  --build-arg EXTENSION_URLS=$extension_urls \
+  --build-arg CKPT_URLS=$ckpt_urls \
+  --build-arg VAE_URLS=$vae_urls \
+  --build-arg LORA_URLS=$lora_urls \
+  .
+
+docker tag $image:$tag $image:$tag-$git_sha
+
+if [[ $push == true ]]; then
+  echo "Pushing $image:$tag"
+  docker push $image:$tag
+
+  echo "Pushing $image:$tag-$git_sha"
+  docker push $image:$tag-$git_sha
+fi
