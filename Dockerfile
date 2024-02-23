@@ -1,4 +1,4 @@
-FROM ghcr.io/ai-dock/comfyui:pytorch-2.1.1-py3.10-cuda-12.1.0-base-22.04
+FROM ghcr.io/ai-dock/comfyui:latest-cuda
 
 RUN apt-get update && apt-get install -y \
   curl \
