@@ -16,7 +16,8 @@ services:
       - "8188:8188"
     volumes:
       - ./models:/opt/ComfyUI/models
+      - ./output:/opt/ComfyUI/output
     environment:
-      # LOAD_SDXL_BASE: 1
-      # LOAD_REFINER: 1
-      CKPT_URLS: https://civitai.com/api/download/models/114367?type=Model&format=SafeTensor&size=full&fp=fp16
+      LOAD_SDXL_BASE: 1
+      LOAD_REFINER: 1
+      # CKPT_URLS: https://civitai.com/api/download/models/114367?type=Model&format=SafeTensor&size=full&fp=fp16
