@@ -1,7 +1,7 @@
 # We use this same pattern for all of our Stable Diffusion images,
 # so that we can easily build them all from the same Dockerfile.
 ARG VERSION=dynamic \
-  BASE_IMAGE=saladtechnologies/sdnext
+  BASE_IMAGE=saladtechnologies/comfyui
 
 FROM $BASE_IMAGE:$VERSION
 
