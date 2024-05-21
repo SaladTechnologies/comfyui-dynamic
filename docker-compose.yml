@@ -1,7 +1,6 @@
 services:
   comfyui:
     image: saladtechnologies/comfyui:dynamic
-    user: 0:1111
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,9 +17,9 @@ services:
       - models:/opt/ComfyUI/models
       - output:/opt/ComfyUI/output
     # environment:
-      # LOAD_SDXL_BASE: 1
-      # LOAD_REFINER: 1
-      # CKPT_URLS: https://civitai.com/api/download/models/114367?type=Model&format=SafeTensor&size=full&fp=fp16
+    #   LOAD_SDXL_BASE: 1
+    #   LOAD_REFINER: 1
+    #   CKPT_URLS: https://civitai.com/api/download/models/114367?type=Model&format=SafeTensor&size=full&fp=fp16
 
 volumes:
   models:
