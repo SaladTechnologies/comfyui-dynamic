@@ -15,7 +15,7 @@ vae_dir=${models_dir}/vae/
 loras_dir=${models_dir}/loras/
 upscale_dir=${models_dir}/upscale_models/
 controlnet_dir=${models_dir}/controlnet/
-extension_dir=/opt/ComfyUI/customer_nodes/
+extension_dir=/opt/ComfyUI/custom_nodes/
 
 mkdir -p $checkpoints_dir
 mkdir -p $vae_dir
